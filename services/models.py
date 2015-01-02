@@ -1,15 +1,11 @@
 from datetime import datetime
 
-#import urllib
 import urllib2
 import json
-#import datetime
-#import pytz
 import logging
-#import os
-#import csv
 
 from django.contrib.gis.db import models
+from django.contrib.gis.geos import fromstr
 from django.core.exceptions import ObjectDoesNotExist
 
 log = logging.getLogger(__name__)
@@ -24,12 +20,13 @@ class PoliceManager(models.GeoManager):
             now = datetime.now()
             date = datetime(now.year - 2, now.month, now.day, now.hour, now.minute, now.second, now.microsecond)
 
-        url = "https://data.seattle.gov/resource/3k2p-39jp.json?%%24where=event_clearance_date%%20%%3E%%20%%27%d-%d-%d%%20%d:%d:%d%%27&$order=event_clearance_date" % (date.year, date.month, date.day, date.hour, date.minute, date.second)
+        url = "https://data.seattle.gov/resource/3k2p-39jp.json?%%24where=event_clearance_date%%20%%3E%%20%%27%d-%02d-%02d%%20%02d:%02d:%02d%%27&$order=event_clearance_date" % (date.year, date.month, date.day, date.hour, date.minute, date.second)
 
         return url
 
     def update_data(self):
         url = self.police_url()
+        log.debug(url)
 
         try:
             response = urllib2.urlopen(url)
@@ -41,22 +38,38 @@ class PoliceManager(models.GeoManager):
                     if 'event_clearance_description' in data: # Ignore records with no descriptions. Do not know why these appear
                         try:
                             point = fromstr("POINT(%s %s)" % (data['longitude'], data['latitude']))
-                            date = datetime.datetime.strptime(data['event_clearance_date'], "%Y-%m-%dT%H:%M:%S")
+                            date = datetime.strptime(data['event_clearance_date'], "%Y-%m-%dT%H:%M:%S")
+
 
                             # Use get_or_create so that we never risk creating the same incident twice
-                            police_obj, created = Police911Call.objects.get_or_create(
+                            police_obj, created = Police911Response.objects.get_or_create(
                                                     general_offense_number=data['general_offense_number'],
                                                     defaults={
+                                                        'cad_event_number':data['cad_event_number'],
                                                         'description':data['event_clearance_description'].strip(),
-                                                        'group':group,
+                                                        'group':data['event_clearance_group'],
+                                                        'subgroup':data['event_clearance_subgroup'],
                                                         'address':data['hundred_block_location'],
+                                                        'zone_beat':data['zone_beat'],
                                                         'date':date,
                                                         'point':point
                                                     })
 
+                            if 'initial_type_description' in data:
+                                police_obj.initial_description = data['initial_type_description']
+                            if 'initial_type_group' in data:
+                                police_obj.initial_group = data['initial_type_group']
+                            if 'initial_type_subgroup' in data:
+                                police_obj.initial_subgroup = data['initial_type_subgroup']
+                            if 'district_sector' in data:
+                                police_obj.district_sector = data['district_sector']
+                            police_obj.save()
+
 
                         except KeyError, e:
                             log.error("Missing key %s in police data for general offense number: %s" % (e, data['general_offense_number']))
+                else:
+                    log.error("Missing event_clearance_description in data: %s" % data['general_offense_number'])
             else:
                 log.error("Non-200 code getting police data: %s" % str(response.code))
         except urllib2.HTTPError, e:
@@ -86,7 +99,7 @@ class Police911Response(models.Model):
     
     address = models.CharField(max_length=75) # Hundred block location
     zone_beat = models.CharField(max_length=10) # Zone/beat
-    district_sector = models.CharField(max_length=10) # District/sector
+    district_sector = models.CharField(max_length=10, blank=True, default="") # District/sector
 
     point = models.PointField(help_text="Represented as 'POINT(longitude, latitude)'")
     objects = PoliceManager()
