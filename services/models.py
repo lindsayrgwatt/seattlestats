@@ -1,7 +1,18 @@
 from datetime import datetime
 
+#import urllib
+import urllib2
+import json
+#import datetime
+#import pytz
+import logging
+#import os
+#import csv
+
 from django.contrib.gis.db import models
 from django.core.exceptions import ObjectDoesNotExist
+
+log = logging.getLogger(__name__)
 
 class PoliceManager(models.GeoManager):
     def police_url(self):
@@ -20,15 +31,36 @@ class PoliceManager(models.GeoManager):
     def update_data(self):
         url = self.police_url()
 
-        # Try to connect.
+        try:
+            response = urllib2.urlopen(url)
 
-        # Test for 200 response
+            if response.code == 200:
+                all_data = json.load(response)
 
-        # Iterate over each item and create object, making sure it doesn't already exist in database
-        # Test for valid lat/lng
-        
-        print "I received URL: %s" % url
+                for data in all_data:
+                    if 'event_clearance_description' in data: # Ignore records with no descriptions. Do not know why these appear
+                        try:
+                            point = fromstr("POINT(%s %s)" % (data['longitude'], data['latitude']))
+                            date = datetime.datetime.strptime(data['event_clearance_date'], "%Y-%m-%dT%H:%M:%S")
 
+                            # Use get_or_create so that we never risk creating the same incident twice
+                            police_obj, created = Police911Call.objects.get_or_create(
+                                                    general_offense_number=data['general_offense_number'],
+                                                    defaults={
+                                                        'description':data['event_clearance_description'].strip(),
+                                                        'group':group,
+                                                        'address':data['hundred_block_location'],
+                                                        'date':date,
+                                                        'point':point
+                                                    })
+
+
+                        except KeyError, e:
+                            log.error("Missing key %s in police data for general offense number: %s" % (e, data['general_offense_number']))
+            else:
+                log.error("Non-200 code getting police data: %s" % str(response.code))
+        except urllib2.HTTPError, e:
+            log.error("HTTPError getting police data: %s" % e.getcode())
 
 # Sample police data:
 # http://data.seattle.gov/resource/3k2p-39jp.json?%24where=event_clearance_date%20%3E%20%272014-12-17%2000:00:00%27&$order=event_clearance_date%20DESC
@@ -41,10 +73,14 @@ class PoliceManager(models.GeoManager):
 # Police 911 calls that generated a response
 class Police911Response(models.Model):
     general_offense_number = models.BigIntegerField(unique=True)
+    cad_event_number = models.BigIntegerField(default=0)
+
     description = models.CharField(max_length=75) # Event Clearance Description and Initial Type Description
     initial_description = models.CharField(max_length=75, blank=True, default="") # Initial description, if available
     group = models.CharField(max_length=75) # Event Clearance Group
+    initial_group = models.CharField(max_length=75, blank=True, default="") # Initial group, if available
     subgroup = models.CharField(max_length=75) # Event Clearance Subgroup
+    initial_subgroup = models.CharField(max_length=75, blank=True, default="") # Initial subgroup, if available
     
     date = models.DateTimeField() # Event clearance date
     
