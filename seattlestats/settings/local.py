@@ -1,13 +1,3 @@
-"""
-Django settings for seattlestats project.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/1.7/topics/settings/
-
-For the full list of settings and their values, see
-https://docs.djangoproject.com/en/1.7/ref/settings/
-"""
-
 from base import *
 
 # Quick-start development settings - unsuitable for production
@@ -21,7 +11,6 @@ DEBUG = True
 
 TEMPLATE_DEBUG = True
 
-# Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
