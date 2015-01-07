@@ -1,5 +1,7 @@
 import os
 
+from celery.schedules import crontab
+
 settings_dir = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.abspath(os.path.dirname(settings_dir))
 BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(settings_dir)))
@@ -62,3 +64,12 @@ BROKER_URL = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+
+CELERYBEAT_SCHEDULE = {
+    'get-police-data': {
+        'task': 'services.tasks.update_police_data',
+        'schedule': crontab(minute='*/5'),
+    },
+}
+
+CELERY_TIMEZONE = TIME_ZONE
