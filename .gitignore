@@ -1,5 +1,5 @@
 *.py[cod]
 db.sqlite3
 *.DS_Store
-logs/debug_log
+logs/debug_log*
 celerybeat-schedule
