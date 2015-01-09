@@ -20,19 +20,23 @@ class PoliceManager(models.GeoManager):
             now = datetime.now()
             date = datetime(now.year - 2, now.month, now.day, now.hour, now.minute, now.second, now.microsecond)
 
+        # Quirk: even though URL requests greater than a timestamp, API will only return
+        # data starting at 00:00:00 for that day. Appears to ignore timestamp
         url = "https://data.seattle.gov/resource/3k2p-39jp.json?%%24where=event_clearance_date%%20%%3E%%20%%27%d-%02d-%02d%%20%02d:%02d:%02d%%27&$order=event_clearance_date" % (date.year, date.month, date.day, date.hour, date.minute, date.second)
 
         return url
 
     def update_data(self):
         url = self.police_url()
-        log.debug(url)
+        log.info(url)
 
         try:
             response = urllib2.urlopen(url)
 
             if response.code == 200:
                 all_data = json.load(response)
+                received_count = len(all_data)
+                created_count = 0
 
                 for data in all_data:
                     if 'event_clearance_description' in data: # Ignore records with no descriptions. Do not know why these appear
@@ -55,6 +59,12 @@ class PoliceManager(models.GeoManager):
                                                         'point':point
                                                     })
 
+                            if created:
+                                created_count += 1
+
+                            else:
+                                log.info("Already have record for general_offense_number %d" % police_obj.general_offense_number)
+
                             if 'initial_type_description' in data:
                                 police_obj.initial_description = data['initial_type_description']
                             if 'initial_type_group' in data:
@@ -68,8 +78,13 @@ class PoliceManager(models.GeoManager):
 
                         except KeyError, e:
                             log.error("Missing key %s in police data for general offense number: %s" % (e, data['general_offense_number']))
-                else:
-                    log.error("Missing event_clearance_description in data: %s" % data['general_offense_number'])
+                            log.error(data)
+
+                    else:
+                        log.error("Missing event_clearance_description in data: %s" % data['general_offense_number'])
+                        log.error(data)
+            
+                log.info("Received %d records and created %d new ones" % (received_count, created_count))
             else:
                 log.error("Non-200 code getting police data: %s" % str(response.code))
         except urllib2.HTTPError, e:
