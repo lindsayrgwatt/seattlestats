@@ -62,8 +62,8 @@ class PoliceManager(models.GeoManager):
                             if created:
                                 created_count += 1
 
-                            else:
-                                log.info("Already have record for general_offense_number %d" % police_obj.general_offense_number)
+                            #else:
+                            #    log.info("Already have record for general_offense_number %d" % police_obj.general_offense_number)
 
                             if 'initial_type_description' in data:
                                 police_obj.initial_description = data['initial_type_description']
