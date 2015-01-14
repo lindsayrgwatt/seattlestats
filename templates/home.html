@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block title %}SeattleStats :: Crime Info for Seattle{% endblock title %}
+
+{% block content %}
+<h1>Current Database Stats:</h1>
+<h3>{{ total }} records</h3>
+<h3>Oldest is: {{earliest|date:"m/d/y H:i:s"}}</h3>
+<h3>Latest is: {{latest|date:"m/d/y H:i:s"}}</h3>
+{% endblock content %}
