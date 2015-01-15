@@ -3,8 +3,8 @@ import os
 from celery.schedules import crontab
 
 settings_dir = os.path.dirname(__file__)
-PROJECT_ROOT = os.path.abspath(os.path.dirname(settings_dir))
-BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(settings_dir)))
+PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(settings_dir)))
+BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(settings_dir))))
 
 # Django settings for neighborhood project.
 ADMINS = (
@@ -56,7 +56,7 @@ USE_TZ = False
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, 'static/'),
+    os.path.join(PROJECT_ROOT, 'static/'),
 )
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
@@ -67,6 +67,9 @@ STATICFILES_FINDERS = (
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '9p^(10!s%fhhh2@do)^()cxvvu%cgayxkm!ye9i6v(6xz_t4u1'
 
+TEMPLATE_DIRS = (
+    os.path.join(PROJECT_ROOT, 'templates/'),
+)
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
