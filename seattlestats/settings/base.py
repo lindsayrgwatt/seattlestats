@@ -82,7 +82,7 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERYBEAT_SCHEDULE = {
     'get-police-data': {
         'task': 'services.tasks.update_police_data',
-        'schedule': crontab(minute='*/5'),
+        'schedule': crontab(minute='*/1'),
     },
 }
 
