@@ -110,7 +110,9 @@ def deploy():
 
             # Set up virtualenv and change write permissions
             run("sudo virtualenv %(virtualenv_dir)s" % env)
-            run("sudo chmod -R 777 %(virtualenv_dir)s" % env)
+            run("sudo chmod -R 754 %(virtualenv_dir)s" % env)
+
+            install_gunicorn()
 
         else:
             with cd(env.project_dir):
@@ -122,7 +124,9 @@ def deploy():
             run("pip install -r requirements.txt") # DO NOT use sudo here or will install outside your virtualenv
             # You can see this packages installed at env.virtualenv_dir/lib/python2.7/site-packages
 
-def install_and_configure_gunicorn():
+            run("sudo git pull")
+
+def install_gunicorn():
     with prefix('source %(virtualenv_dir)s/bin/activate' % env):
         run("pip install gunicorn")
 
