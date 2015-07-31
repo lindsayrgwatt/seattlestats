@@ -17,6 +17,9 @@ export PYTHONPATH=$DJANGODIR:$PYTHONPATH
 RUNDIR=$(dirname $SOCKFILE)
 test -d $RUNDIR || mkdir -p $RUNDIR
 
+# Start virtualenv
+source /home/ubuntu/seattlestats/venv/bin/activate
+
 # Start your Django unicorn
 # Programs meant to be run under supervisor should not daemonize themselves
 exec gunicorn ${DJANGO_WSGI_MODULE}:application \

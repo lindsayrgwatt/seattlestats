@@ -2,7 +2,7 @@
 # And http://stackoverflow.com/questions/2665743/how-do-i-create-a-postgresql-user-with-fabric
 import os, sys
 
-from fabric.api import local, run, env, sudo, settings, warn_only, cd, prefix
+from fabric.api import local, run, env, sudo, settings, warn_only, cd, prefix, put
 from fabric.colors import green
 from fabric.contrib import django
 
@@ -11,7 +11,7 @@ env.http_dir = '/home/ubuntu'
 env.project_name = 'seattlestats'
 env.project_dir = os.path.join(env.http_dir, env.project_name)
 env.virtualenv_dir = os.path.join(env.project_dir, 'venv')
-env.hosts = ['ec2-52-10-132-110.us-west-2.compute.amazonaws.com']
+env.hosts = ['ec2-52-26-247-31.us-west-2.compute.amazonaws.com']
 env.user = 'ubuntu'
 env.sudo_user = env.user
 env.postgres_user_password = 'iluvpostgres'
@@ -130,6 +130,10 @@ def install_gunicorn():
     with prefix('source %(virtualenv_dir)s/bin/activate' % env):
         run("pip install gunicorn")
 
+def configure_nginx():
+    run("sudo mv -f %(project_dir)s/nginx.conf /etc/nginx/" % env)
+    #put('nginx.conf', '/etc/nginx/nginx.conf', use_sudo=True)
+    sudo("service nginx restart")
 
 #run("sudo apt-get install -y -q supervisor")
 #run("sudo service supervisor restart")
