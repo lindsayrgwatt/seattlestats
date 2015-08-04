@@ -113,6 +113,8 @@ def deploy():
             run("sudo chmod -R 754 %(virtualenv_dir)s" % env)
 
             install_gunicorn()
+            install_supervisor()
+            launch_supervisor()
 
         else:
             with cd(env.project_dir):
@@ -132,37 +134,27 @@ def install_gunicorn():
 
 def configure_nginx():
     run("sudo mv -f %(project_dir)s/nginx.conf /etc/nginx/" % env)
-    #put('nginx.conf', '/etc/nginx/nginx.conf', use_sudo=True)
     sudo("service nginx restart")
 
-#run("sudo apt-get install -y -q supervisor")
-#run("sudo service supervisor restart")
-    
+def install_supervisor():
+    with prefix('source %(virtualenv_dir)s/bin/activate' % env):
+        run("pip install supervisor --pre")
+        run("sudo mv -f %(project_dir)s/bin/supervisorstart.conf /etc/init/" % env)
+
+def launch_supervisor():
+    run("sudo start supervisord")
+
+def restart_supervisor():
+    run("sudo stop supervisord")
+    run("sudo start supervisord")
+
+def test_supervisor():
+    with prefix('source %(virtualenv_dir)s/bin/activate' % env):
+        run("supervisorctl status seattlestats")
+
 # http://nurupoga.org/articles/deployment-with-fabric-and-virtualenv
 # http://stackoverflow.com/questions/9337149/is-virtualenv-recommended-for-django-production-server -> scroll down
 # http://dangoldin.com/2014/02/10/using-virtualenv-in-production/
 # http://thecodeship.com/deployment/deploy-django-apache-virtualenv-and-mod_wsgi/
-
-
-#def first_deploy():
-    
-    # Create admin user
-
-    # Create gunicorn log
-
-    # Configure nginx and gunicorn and supervisor
-
-    # Create environment variables
-
-    # Add celery
-
-def hello(name="world"):
-    print("Hello %s!" % name)
-
-def fake_deploy(name="test"):
-    local("echo test")
-    print(green("This text is green!"))
-
-def fake_remote_deploy():
-    run("echo fake deploy")
-
+# https://lincolnloop.com/blog/2010/jun/24/automatically-running-supervisord-startup/
+# https://www.digitalocean.com/community/tutorials/the-upstart-event-system-what-it-is-and-how-to-use-it
